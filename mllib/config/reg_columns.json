@@ -1,0 +1,15 @@
+{ 
+  'names_str':[],
+  'names_num':['age', 'sex', 'bmi', 'bp', 's1', 's2', 's3', 's4', 's5', 's6'],
+  'names_show':[],
+  'Y_name':'Y',
+  'dir_of_inputdata':'../../run/data/dia.csv',
+  'dir_of_outputdata':'../../run/log/reg.log',
+  'open_pca':'open_pca',
+  'RE_Lasso_alpha':181,
+  'RE_Ridge_alpha':1991,
+  'RE_RandomForestReg':{'n_estimators':600,'max_features':0.8},
+  'RE_GradientBoostingReg':{'n_estimators':100,'max_features':0.8}
+}
+
+

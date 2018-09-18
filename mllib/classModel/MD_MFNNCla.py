@@ -1,0 +1,151 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+__author__ = "Su Yumo <suyumo@buaa.edu.cn>"
+
+
+import sys
+sys.path.append("..")
+import json
+import warnings
+import pandas as pd
+import numpy as np
+from src import ML_Package as mlp
+from src import DL_Package as dlp
+from src import Tools_Package as too
+from sklearn.model_selection import train_test_split
+from keras.models import load_model 
+from collections import Counter
+from time import time
+
+
+def main():
+    #静默弃用sklearn警告
+    warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
+    options = sys.argv[1]
+    model_name = 'MFNNCla'
+    dir_of_dict = '../config/cla_columns.json'
+    with open(dir_of_dict,'r') as f:
+        column_lines = f.read()
+        name_dict = eval(column_lines)
+    names_str = name_dict['names_str']
+    names_num = name_dict['names_num']
+    names_show = name_dict['names_show']
+    Y_names = name_dict['Y_name']
+    dir_of_inputdata = name_dict['dir_of_inputdata']
+    dir_of_outputdata = name_dict['dir_of_outputdata']
+    open_pca = name_dict['open_pca']
+
+    if options == 'train':
+        time_start = time()
+        dir_of_storePara = '../cla_parameter/%sParameters.json'%model_name
+        #获取数据
+        dataset = pd.read_csv(dir_of_inputdata)
+        #用于测试 
+        #dataset = dataset[0:1000]
+        #限制多数类的数据
+        #dataset = too.CalcMostLabel(dataset,Y_names)
+
+        Y_datavec = dataset[Y_names].values
+        #输出每个标签的数量
+        print 'Counter:original y',Counter(Y_datavec)
+        print'----------------------------------------------'
+
+        #分别获得字符字段和数值型字段数据
+        dataset_str = dataset[names_str]
+        dataset_num = dataset[names_num]
+        dataset_show = dataset[names_show]
+        dataset_str_list = dataset_str.values.tolist()
+        datavec_num_list = dataset_num.values.tolist()
+        datavec_show_list = dataset_show.values.tolist()
+
+        vocabset = too.CreateVocabList(dataset_str_list)
+        datavec_str_list = too.BagofWords2Vec(vocabset,dataset_str_list)
+        #vocabset_index = {y:i for i,y in enumerate(vocabset)}
+
+        #将list转化为DataFrame，合并两表
+        datavec_str = pd.DataFrame(datavec_str_list,columns=vocabset)
+        datavec_num = pd.DataFrame(datavec_num_list,columns=names_num)
+        #按照左表连接，右表可以为空
+        data_tem = pd.merge(datavec_num,datavec_str,how="left",right_index=True,left_index=True)
+        X_datavec = data_tem.values
+        X_columns = data_tem.columns
+
+        #数据归一化
+        X_datavec = too.Data_process(X_datavec)
+        #处理数据不平衡问题
+        #X,Y =  mlp.KMeans_unbalanced(X_datavec,Y_datavec,X_columns,Y_names)
+        #X,Y =  mlp.Sample_unbalanced(X_datavec,Y_datavec)
+        X,Y = X_datavec, Y_datavec
+        ret_num = 'no_num'
+        #PCA降维
+        if open_pca == 'open_pca':
+            pca_num,ret = mlp.GS_PCA(X)
+            print 'PCA Information:',pca_num,ret
+            print'----------------------------------------------'
+            ret_num = ret['99%']
+            X = mlp.Model_PCA(X,ret_num)
+        #存储vocabset这个list和ret_num
+        too.StorePara(dir_of_storePara,vocabset,ret_num)
+
+        print'--------------Train data shape----------------'
+        print 'X.shape:',X.shape
+        print'----------------------------------------------'
+        print 'Y.shape:',Y.shape
+        print'----------------------------------------------'
+        print'--------------Start %s model------------------'%model_name
+        X_train, X_test, y_train, y_test = train_test_split(X, Y,
+                                                            train_size=0.75, test_size=0.25,stratify=Y,random_state=0)
+        clf_model = dlp.GS_cla_MFNN(X_train, X_test, y_train, y_test)
+        #保存模型参数
+        clf_model.save('../cla_parameter/%s_model.h5'%model_name)
+        print'----------------------------------------------'
+        too.Predict_test_data(X_test, y_test, datavec_show_list, names_show, clf_model, dir_of_outputdata, 'MFNN')
+        duration = too.Duration(time()-time_start)
+        print 'Total run time: %s'%duration
+
+    if options == 'predict':
+        time_start = time()
+        dir_of_storePara = '../cla_parameter/%sParameters.json'%model_name
+        with open(dir_of_storePara,'r') as f:
+            para_dict = json.load(f)
+        vocabset = para_dict['vocabset']
+        ret_num = para_dict['ret_num']
+        #获取数据
+        X_dataset = pd.read_csv(dir_of_inputdata)
+
+        #分别获得字符字段和数值型字段数据
+        dataset_str = X_dataset[names_str]
+        dataset_num = X_dataset[names_num]
+        dataset_show = X_dataset[names_show]
+        dataset_str_list = dataset_str.values.tolist()
+        datavec_num_list = dataset_num.values.tolist()
+        datavec_show_list = dataset_show.values.tolist()
+
+        datavec_str_list = too.BagofWords2Vec(vocabset,dataset_str_list)
+
+        #将list转化为DataFrame，合并两表
+        datavec_str = pd.DataFrame(datavec_str_list,columns=vocabset)
+        datavec_num = pd.DataFrame(datavec_num_list,columns=names_num)
+        data_tem = pd.merge(datavec_num,datavec_str,how="left",right_index=True,left_index=True)
+        X_datavec = data_tem.values
+
+        #数据归一化
+        X = too.Data_process(X_datavec)
+        #PCA降维
+        if open_pca == 'open_pca':
+            X = mlp.Model_PCA(X,ret_num)
+
+        print'-------------Pdedict data shape---------------'
+        print 'X.shape:',X.shape
+        print'----------------------------------------------'
+        print'--------------Start %s model------------------'%model_name
+
+        clf_model = load_model("../cla_parameter/%s_model.h5"%model_name)
+        too.Predict_data(X, datavec_show_list, names_show, clf_model, dir_of_outputdata)
+        duration = too.Duration(time()-time_start)
+        print 'Total run time: %s'%duration
+
+if __name__ == "__main__":
+    main()
+
+

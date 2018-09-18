@@ -1,0 +1,9 @@
+{
+  'names_str':['Acct_Number','pickupUrl','receiveUrl'],
+  'names_num':['hour','urlType_d','amount_d','count_d'],
+  'names_show':['orderNo','orderDatetime'],
+  'dir_of_inputdata':'../../run/data/tt',
+  'dir_of_outputdata':'../../run/log/cluster.log',
+  'open_pca':'open_pca',
+  'DBSCAN_options':'slow_index'
+}

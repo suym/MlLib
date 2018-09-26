@@ -19,26 +19,21 @@ from time import time
 def main():
     #静默弃用sklearn警告
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
-    options = sys.argv[1]
     model_name = 'RE_RandomForestReg'
-    dir_of_dict = '../config/reg_columns.json'
-    with open(dir_of_dict,'r') as f:
-        column_lines = f.read()
-        name_dict = eval(column_lines)
-    names_str = name_dict['names_str']
-    names_num = name_dict['names_num']
-    names_show = name_dict['names_show']
-    Y_names = name_dict['Y_name']
-    dir_of_inputdata = name_dict['dir_of_inputdata']
-    dir_of_outputdata = name_dict['dir_of_outputdata']
-    open_pca = name_dict['open_pca']
+    dir_of_dict = sys.argv[1]
+    bag = too.Read_info(dir_of_dict,'supervision')
+    name_dict,options,task_id,job_id,train_result_dir,\
+    names_str,names_num,names_show,Y_names,dir_of_inputdata,\
+    dir_of_outputdata,open_pca,train_size,test_size = bag
+
+    dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
+    dir_of_storeModel = train_result_dir + '/%s_model.m'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
     RE_RandomForestReg = name_dict['RE_RandomForestReg']
     n_estimators = RE_RandomForestReg['n_estimators']
     max_features = RE_RandomForestReg['max_features']
 
     if options == 'train':
         time_start = time()
-        dir_of_storePara = '../reg_parameter/%sParameters.json'%model_name
         #获取数据
         dataset = pd.read_csv(dir_of_inputdata)
         #用于测试 
@@ -90,10 +85,10 @@ def main():
         print'----------------------------------------------'
         print'--------------Start %s model------------------'%model_name
         X_train, X_test, y_train, y_test = train_test_split(X, Y,
-                                                            train_size=0.75, test_size=0.25,random_state=0)
+                                                            train_size=train_size, test_size=test_size,random_state=0)
         clf_model = mlp.RE_RandomForestRegressor(X_train, X_test, y_train, y_test,n_estimators,max_features)
         #保存模型参数
-        joblib.dump(clf_model, "../reg_parameter/%s_model.m"%model_name)
+        joblib.dump(clf_model, dir_of_storeModel)
         print'----------------------------------------------'
         too.Predict_test_data(X_test, y_test, datavec_show_list, names_show, clf_model, dir_of_outputdata,mtype='reg')
         duration = too.Duration(time()-time_start)
@@ -101,7 +96,6 @@ def main():
 
     if options == 'predict':
         time_start = time()
-        dir_of_storePara = '../reg_parameter/%sParameters.json'%model_name
         with open(dir_of_storePara,'r') as f:
             para_dict = json.load(f)
         vocabset = para_dict['vocabset']
@@ -136,7 +130,7 @@ def main():
         print'----------------------------------------------'
         print'--------------Start %s model------------------'%model_name
 
-        clf_model = joblib.load("../reg_parameter/%s_model.m"%model_name)
+        clf_model = joblib.load(dir_of_storeModel)
         too.Predict_data(X, datavec_show_list, names_show, clf_model, dir_of_outputdata,mtype='reg')
         duration = too.Duration(time()-time_start)
         print 'Total run time: %s'%duration

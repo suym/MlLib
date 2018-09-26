@@ -22,6 +22,47 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 # 数据预处理
 # ---------------------------------------------
 
+def Read_info(dir_of_dict,choose_type):
+    '''
+    读取配置文件
+    '''
+    with open(dir_of_dict,'r') as f:
+        column_lines = f.read()
+        name_dict = eval(column_lines)
+    if choose_type == 'supervision':
+        options = name_dict['names_type']
+        task_id = name_dict['task_id']
+        job_id = name_dict['job_id']
+        train_result_dir = name_dict['train_result_dir']
+        names_str = name_dict['names_str']
+        names_num = name_dict['names_num']
+        names_show = name_dict['names_show']
+        Y_names = name_dict['Y_name']
+        dir_of_inputdata = name_dict['dir_of_inputdata']
+        dir_of_outputdata = name_dict['dir_of_outputdata']
+        open_pca = name_dict['open_pca']
+        train_size = name_dict['train_size']
+        test_size = name_dict['test_size']
+
+        bag = name_dict,options,task_id,job_id,train_result_dir,\
+              names_str,names_num,names_show,Y_names,dir_of_inputdata,\
+              dir_of_outputdata,open_pca,train_size,test_size
+    if choose_type == 'non-supervision':
+        task_id = name_dict['task_id']
+        job_id = name_dict['job_id']
+        train_result_dir = name_dict['train_result_dir']
+        names_str = name_dict['names_str']
+        names_num = name_dict['names_num']
+        names_show = name_dict['names_show']
+        dir_of_inputdata = name_dict['dir_of_inputdata']
+        dir_of_outputdata = name_dict['dir_of_outputdata']
+        open_pca = name_dict['open_pca']
+
+        bag = name_dict,task_id,job_id,train_result_dir,\
+              names_str,names_num,names_show,\
+              dir_of_inputdata,dir_of_outputdata,open_pca
+    return bag
+
 def Data_process(x_ori,options='minmaxscaler'):
     '''
     对数据进行z-score标准化或者标准化到0到1

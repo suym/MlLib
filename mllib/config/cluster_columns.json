@@ -1,4 +1,7 @@
 {
+  'task_id':111,
+  'job_id':21,
+  'train_result_dir':'../cluster_parameter',
   'names_str':['Acct_Number','pickupUrl','receiveUrl'],
   'names_num':['hour','urlType_d','amount_d','count_d'],
   'names_show':['orderNo','orderDatetime'],

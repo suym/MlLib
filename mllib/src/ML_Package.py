@@ -135,7 +135,7 @@ def GS_LogisticRegression(*data):
 
 def RE_LogisticRegression(X_train, X_test, y_train, y_test, penalty_num = 'l2', C_num= 1):
 
-    clf = LogisticRegression(penalty=penalty_num,C=C_num)
+    clf = LogisticRegression(penalty=penalty_num,C=C_num,solver='sag',n_jobs=-1)
     clf.fit(X_train,y_train)
     print'----------------------------------------------'
     print "Optimized score: ",clf.score(X_test,y_test)
@@ -258,7 +258,7 @@ def GS_RandomForestClassifier(*data):
 def RE_RandomForestClassifier(X_train, X_test, y_train, y_test,n_est = 300, max_f = 0.8):
 
     clf = RandomForestClassifier(min_samples_split = 20, min_samples_leaf = 8, 
-                                 n_estimators = n_est, max_features = max_f)
+                                 n_estimators = n_est, max_features = max_f,n_jobs=-1)
     clf.fit(X_train,y_train)
     print'----------------------------------------------'
     print "Optimized score: ",clf.score(X_test,y_test)
@@ -507,7 +507,7 @@ def GS_RandomForestRegressor(*data):
 def RE_RandomForestRegressor(X_train, X_test, y_train, y_test,n_est = 300, max_f= 0.8):
 
     clf = RandomForestRegressor(min_samples_split = 20, min_samples_leaf = 8, 
-                                 n_estimators = n_est, max_features = max_f)
+                                 n_estimators = n_est, max_features = max_f,n_jobs=-1)
     clf.fit(X_train,y_train)
     print'----------------------------------------------'
     print "Optimized score: ",clf.score(X_test,y_test)

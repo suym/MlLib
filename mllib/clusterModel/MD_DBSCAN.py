@@ -18,23 +18,19 @@ def main():
     #静默弃用sklearn警告
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
     model_name = 'DBSCAN'
-    dir_of_dict = '../config/cluster_columns.json'
-    with open(dir_of_dict,'r') as f:
-        column_lines = f.read()
-        name_dict = eval(column_lines)
-    names_str = name_dict['names_str']
-    names_num = name_dict['names_num']
-    names_show = name_dict['names_show']
-    dir_of_inputdata = name_dict['dir_of_inputdata']
-    dir_of_outputdata = name_dict['dir_of_outputdata']
-    open_pca = name_dict['open_pca']
+    dir_of_dict = sys.argv[1]
+    bag = too.Read_info(dir_of_dict,'non-supervision')
+    name_dict,task_id,job_id,train_result_dir,\
+    names_str,names_num,names_show,\
+    dir_of_inputdata,dir_of_outputdata,open_pca = bag
+    dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
+
     DBSCAN_options = name_dict['DBSCAN_options']
 
     column_names = names_str + names_num
     column_names_show = names_str + names_num + names_show
 
     time_start = time()
-    dir_of_storePara = '../cluster_parameter/%sParameters.json'%model_name
     #获取数据
     dataset = pd.read_csv(dir_of_inputdata)
     #用于测试 

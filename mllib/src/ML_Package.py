@@ -232,7 +232,7 @@ def GS_RandomForestClassifier(*data):
                         'max_features':[0.5,0.8,1]}
                         ]
     C_V = StratifiedKFold(n_splits=5,random_state=0)
-    clf_1 =GridSearchCV(RandomForestClassifier(min_samples_split = 20, min_samples_leaf = 8), tuned_parameters_1, cv =C_V, n_jobs=-1)
+    clf_1 =GridSearchCV(RandomForestClassifier(min_samples_split = 20, min_samples_leaf = 8,n_jobs=-1), tuned_parameters_1, cv =C_V, n_jobs=-1)
     clf_1.fit(X_train,y_train)
     best_par_1 = clf_1.best_params_
     best_par_f = best_par_1['max_features']
@@ -240,7 +240,7 @@ def GS_RandomForestClassifier(*data):
     tuned_parameters = [{'n_estimators':[400,500,700],
                         'max_features':[best_par_f]}
                         ]
-    clf =GridSearchCV(RandomForestClassifier(min_samples_split = 20, min_samples_leaf = 8), tuned_parameters, cv =C_V, n_jobs=-1)
+    clf =GridSearchCV(RandomForestClassifier(min_samples_split = 20, min_samples_leaf = 8,n_jobs=-1), tuned_parameters, cv =C_V, n_jobs=-1)
     clf.fit(X_train,y_train)
     print "Best parameters set found: ",clf.best_params_
     print "Grid scores: "
@@ -483,7 +483,7 @@ def GS_RandomForestRegressor(*data):
                         'max_features':[0.5,0.8,1]}
                         ]
     C_V = KFold(n_splits=5,random_state=0)
-    clf_1 =GridSearchCV(RandomForestRegressor(min_samples_split = 20, min_samples_leaf = 8), tuned_parameters_1, cv =C_V, n_jobs=-1)
+    clf_1 =GridSearchCV(RandomForestRegressor(min_samples_split = 20, min_samples_leaf = 8,n_jobs=-1), tuned_parameters_1, cv =C_V, n_jobs=-1)
     clf_1.fit(X_train,y_train)
     best_par_1 = clf_1.best_params_
     best_par_f = best_par_1['max_features']
@@ -491,7 +491,7 @@ def GS_RandomForestRegressor(*data):
     tuned_parameters = [{'n_estimators':[400],
                         'max_features':[best_par_f]}
                         ]
-    clf =GridSearchCV(RandomForestRegressor(min_samples_split = 20, min_samples_leaf = 8), tuned_parameters, cv =C_V, n_jobs=-1)
+    clf =GridSearchCV(RandomForestRegressor(min_samples_split = 20, min_samples_leaf = 8,n_jobs=-1), tuned_parameters, cv =C_V, n_jobs=-1)
     clf.fit(X_train,y_train)
     print "Best parameters set found: ",clf.best_params_
     print "Grid scores: "

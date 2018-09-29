@@ -8,5 +8,6 @@
   'dir_of_inputdata':'../../run/data/tt',
   'dir_of_outputdata':'../../run/log/cluster.log',
   'open_pca':'open_pca',
+  'normalized_type':'z-score',
   'DBSCAN_options':'slow_index'
 }

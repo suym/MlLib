@@ -10,6 +10,7 @@
   'dir_of_inputdata':'../../run/data/tt',
   'dir_of_outputdata':'../../run/log/cla.log',
   'open_pca':'open_pca',
+  'normalized_type':'z-score',
   'train_size':0.75,
   'test_size':0.25,
   'RE_LogisticReg':{'penalty':'l2','C':1},

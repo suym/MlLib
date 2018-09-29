@@ -22,7 +22,7 @@ def main():
     bag = too.Read_info(dir_of_dict,'non-supervision')
     name_dict,task_id,job_id,train_result_dir,\
     names_str,names_num,names_show,\
-    dir_of_inputdata,dir_of_outputdata,open_pca = bag
+    dir_of_inputdata,dir_of_outputdata,open_pca,normalized_type = bag
     dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
 
     column_names = names_str + names_num
@@ -54,7 +54,7 @@ def main():
     X_datavec = data_tem.values
 
     #数据归一化
-    X = too.Data_process(X_datavec)
+    X = too.Data_process(X_datavec,normalized_type)
 
     ret_num = 'no_num'
     #PCA降维

@@ -24,7 +24,7 @@ def main():
     bag = too.Read_info(dir_of_dict,'supervision')
     name_dict,options,task_id,job_id,train_result_dir,\
     names_str,names_num,names_show,Y_names,dir_of_inputdata,\
-    dir_of_outputdata,open_pca,train_size,test_size = bag
+    dir_of_outputdata,open_pca,train_size,test_size,normalized_type = bag
 
     dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
     dir_of_storeModel = train_result_dir + '/%s_model.m'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
@@ -60,7 +60,7 @@ def main():
         X_columns = data_tem.columns
 
         #数据归一化
-        X_datavec = too.Data_process(X_datavec)
+        X_datavec = too.Data_process(X_datavec,normalized_type)
         #处理数据不平衡问题
         #X,Y =  mlp.KMeans_unbalanced(X_datavec,Y_datavec,X_columns,Y_names)
         #X,Y =  mlp.Sample_unbalanced(X_datavec,Y_datavec)
@@ -118,7 +118,7 @@ def main():
         X_datavec = data_tem.values
 
         #数据归一化
-        X = too.Data_process(X_datavec)
+        X = too.Data_process(X_datavec,normalized_type)
         #PCA降维
         if open_pca == 'open_pca':
             X = mlp.Model_PCA(X,ret_num)

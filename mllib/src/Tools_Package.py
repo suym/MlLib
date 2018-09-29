@@ -43,10 +43,11 @@ def Read_info(dir_of_dict,choose_type):
         open_pca = name_dict['open_pca']
         train_size = name_dict['train_size']
         test_size = name_dict['test_size']
+        normalized_type = name_dict['normalized_type']
 
         bag = name_dict,options,task_id,job_id,train_result_dir,\
               names_str,names_num,names_show,Y_names,dir_of_inputdata,\
-              dir_of_outputdata,open_pca,train_size,test_size
+              dir_of_outputdata,open_pca,train_size,test_size,normalized_type
     if choose_type == 'non-supervision':
         task_id = name_dict['task_id']
         job_id = name_dict['job_id']
@@ -57,10 +58,12 @@ def Read_info(dir_of_dict,choose_type):
         dir_of_inputdata = name_dict['dir_of_inputdata']
         dir_of_outputdata = name_dict['dir_of_outputdata']
         open_pca = name_dict['open_pca']
+        normalized_type = name_dict['normalized_type']
 
         bag = name_dict,task_id,job_id,train_result_dir,\
               names_str,names_num,names_show,\
-              dir_of_inputdata,dir_of_outputdata,open_pca
+              dir_of_inputdata,dir_of_outputdata,open_pca,normalized_type
+
     return bag
 
 def Data_process(x_ori,options='minmaxscaler'):

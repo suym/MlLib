@@ -139,6 +139,35 @@ def CalcMostLabel(xytable,Y_names,low_value = 0,hight_value = 30000):
 
     return new_xy
 
+def Merge_form(dataset,names_str,names_num,names_show,vocab_set,key):
+    '''
+    将数值型和字符型的dataframe合并
+    '''
+    #分别获得字符字段和数值型字段数据
+    dataset_str = dataset[names_str]
+    dataset_num = dataset[names_num]
+    dataset_show = dataset[names_show]
+    dataset_str_list = dataset_str.values.tolist()
+    datavec_num_list = dataset_num.values.tolist()
+    datavec_show_list = dataset_show.values.tolist()
+    if key == 'open':
+        vocabset = CreateVocabList(dataset_str_list)
+    else:
+        vocabset = vocab_set
+    datavec_str_list = BagofWords2Vec(vocabset,dataset_str_list)
+    #vocabset_index = {y:i for i,y in enumerate(vocabset)}
+    #将list转化为DataFrame，合并两表
+    datavec_str = pd.DataFrame(datavec_str_list,columns=vocabset)
+    datavec_num = pd.DataFrame(datavec_num_list,columns=names_num)
+    #按照左表连接，右表可以为空
+    data_tem = pd.merge(datavec_num,datavec_str,how="left",right_index=True,left_index=True)
+    X_datavec = data_tem.values
+    X_columns = data_tem.columns
+    if key == 'open':
+        return X_datavec,X_columns,vocabset,datavec_show_list
+    else:
+        return X_datavec,datavec_show_list
+
 def StorePara(dir_of_storePara,vocabset,ret_num):
     para_dict = {}
     para_dict['vocabset']=vocabset

@@ -11,16 +11,20 @@ import pandas as pd
 import numpy as np
 from src import ML_Package as mlp
 from src import Tools_Package as too
-from sklearn.model_selection import train_test_split
-from sklearn.externals import joblib
+from src import Distr_ML_Package as dmp 
 from collections import Counter
 from time import time
 
+from pyspark.sql import SparkSession
+from pyspark.ml.feature import RFormula,VectorAssembler
+from pyspark.ml.classification import LogisticRegressionModel
+from pyspark.ml.linalg import Vectors
+from pyspark.sql import Row
 
 def main():
     #静默弃用sklearn警告
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
-    model_name = 'GradientBoostingCla'
+    model_name = 'Distr_LogisticRegression'
     dir_of_dict = sys.argv[1]
     bag = too.Read_info(dir_of_dict,'supervision')
     name_dict,options,task_id,job_id,train_result_dir,\
@@ -28,7 +32,17 @@ def main():
     dir_of_outputdata,open_pca,train_size,test_size,normalized_type = bag
 
     dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
-    dir_of_storeModel = train_result_dir + '/%s_model.m'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
+    dir_of_storeModel = train_result_dir + '/%s_model'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
+
+    # 配置spark客户端
+    sess = SparkSession\
+        .builder\
+        .master("local[4]")\
+        .appName("lr_spark")\
+        .config("spark.some.config.option", "some-value")\
+        .getOrCreate()
+    sc=sess.sparkContext
+    sc.setLogLevel("ERROR")
 
     if options == 'train':
         time_start = time()
@@ -38,7 +52,6 @@ def main():
         #dataset = dataset[0:1000]
         #限制多数类的数据
         #dataset = too.CalcMostLabel(dataset,Y_names)
-
         Y_datavec = dataset[Y_names].values
         #输出每个标签的数量
         print 'Counter:original y',Counter(Y_datavec)
@@ -68,13 +81,24 @@ def main():
         print 'Y.shape:',Y.shape
         print'----------------------------------------------'
         print'--------------Start %s model------------------'%model_name
-        X_train, X_test, y_train, y_test = train_test_split(X, Y,
-                                                            train_size=train_size, test_size=test_size,stratify=Y,random_state=0)
-        clf_model = mlp.GS_GradientBoostingClassifier(X_train, X_test, y_train, y_test)
+
+        features = pd.DataFrame(X,) 
+        targets = pd.DataFrame(Y, columns = ['Y'])
+        #合拼矩阵
+        merged = pd.concat([features, targets], axis = 1)
+        #创建spark DataFrame
+        raw_df = sess.createDataFrame(merged)
+        #提取特征与目标
+        fomula = RFormula(formula = 'Y ~ .', featuresCol="features",labelCol="label")
+        raw_df = fomula.fit(raw_df).transform(raw_df)
+        #拆分训练集和测试集
+        xy_train, xy_test = raw_df.randomSplit([train_size, test_size],seed=666)
+        #调用模型
+        clf_model = dmp.Distr_LogisticRegression(xy_train,xy_test)
         #保存模型参数
-        joblib.dump(clf_model, dir_of_storeModel)
+        clf_model.write().overwrite().save(dir_of_storeModel)
         print'----------------------------------------------'
-        too.Predict_test_data(X_test, y_test, datavec_show_list, names_show, clf_model, dir_of_outputdata)
+        dmp.Predict_test_data(xy_test, datavec_show_list, names_show, clf_model, dir_of_outputdata)
         duration = too.Duration(time()-time_start)
         print 'Total run time: %s'%duration
 
@@ -99,8 +123,13 @@ def main():
         print'----------------------------------------------'
         print'--------------Start %s model------------------'%model_name
 
-        clf_model = joblib.load(dir_of_storeModel)
-        too.Predict_data(X, datavec_show_list, names_show, clf_model, dir_of_outputdata)
+        features = pd.DataFrame(X,)
+        #创建spark DataFrame
+        raw_features = sess.createDataFrame(features)
+        raw_x = VectorAssembler(inputCols=raw_features.columns,outputCol='features').transform(raw_features)
+        raw_x.show(2)
+        clf_model = LogisticRegressionModel.load(dir_of_storeModel)
+        dmp.Predict_data(raw_x, datavec_show_list, names_show, clf_model, dir_of_outputdata)
         duration = too.Duration(time()-time_start)
         print 'Total run time: %s'%duration
 

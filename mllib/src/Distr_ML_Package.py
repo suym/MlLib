@@ -12,7 +12,7 @@ import pandas as pd
 from pyspark.ml.tuning import ParamGridBuilder,CrossValidator
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.mllib.evaluation import BinaryClassificationMetrics
-from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.classification import LogisticRegression,RandomForestClassifier,GBTClassifier
 
 # ---------------------------------------------
 # 分类算法
@@ -43,6 +43,56 @@ def Distr_LogisticRegression(xy_train,xy_test):
     
     return cvModel.bestModel
 
+def Distr_GBTClassifier(xy_train,xy_test):
+    gf = GBTClassifier(minInstancesPerNode=20,maxDepth=25)
+    evalu = BinaryClassificationEvaluator()
+    grid_1 = ParamGridBuilder()\
+            .addGrid(gf.maxIter, [100])\
+            .addGrid(gf.subsamplingRate, [0.5,0.8,1.0])\
+            .build()    
+    cv_1 = CrossValidator(estimator=gf,estimatorParamMaps=grid_1,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel_1=cv_1.fit(xy_train)
+    print "Grid scores: "
+    best_params_1 = Get_best_params(cvModel_1)['subsamplingRate']
+    grid = ParamGridBuilder()\
+            .addGrid(gf.maxIter, [300,500])\
+            .addGrid(gf.subsamplingRate, [best_params_1,])\
+            .build() 
+    cv = CrossValidator(estimator=gf,estimatorParamMaps=grid,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel=cv.fit(xy_train)
+    best_params = Get_best_params(cvModel)
+
+    print "Best parameters set found: %s" % best_params
+    
+    return cvModel.bestModel
+
+def Distr_RandomForestClassifier(xy_train,xy_test):
+    rf = RandomForestClassifier(minInstancesPerNode=20,maxDepth=25)
+    evalu = BinaryClassificationEvaluator()
+    grid_1 = ParamGridBuilder()\
+            .addGrid(rf.numTrees, [100])\
+            .addGrid(rf.featureSubsetStrategy, ['0.5','0.8','1.0'])\
+            .build()    
+    cv_1 = CrossValidator(estimator=rf,estimatorParamMaps=grid_1,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel_1=cv_1.fit(xy_train)
+    print "Grid scores: "
+    best_params_1 = Get_best_params(cvModel_1)['featureSubsetStrategy']
+    grid = ParamGridBuilder()\
+            .addGrid(rf.numTrees, [300,500])\
+            .addGrid(rf.featureSubsetStrategy, [best_params_1,])\
+            .build() 
+    cv = CrossValidator(estimator=rf,estimatorParamMaps=grid,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel=cv.fit(xy_train)
+    best_params = Get_best_params(cvModel)
+
+    print "Best parameters set found: %s" % best_params
+    
+    return cvModel.bestModel
+
 # ---------------------------------------------
 # 函数
 # ---------------------------------------------
@@ -57,11 +107,20 @@ def Print_class_info(xy_predict):
     predict_and_target_rdd = xy_predict.rdd.map(build_predict_target)
     metrics = BinaryClassificationMetrics(predict_and_target_rdd)
 
-    traing_err = xy_predict.filter(xy_predict['label'] != xy_predict['prediction']).count() 
-    total = xy_predict.count()
-    pb_scores = 1-float(traing_err)/total
+    correct_amount = xy_predict.filter(xy_predict['label'] == xy_predict['prediction']).count() 
+    total_amount = xy_predict.count()
+    accuracy_rate = float(correct_amount)/total_amount
+    positive_precision_amount = xy_predict.filter(xy_predict['label'] == 1).filter(xy_predict['prediction'] == 1).count()
+    positive_amount = xy_predict.filter(xy_predict['label'] == 1).count()
+    predict_amount = xy_predict.filter(xy_predict['prediction'] == 1).count()
+
+    recall_rate =  float(positive_precision_amount)/positive_amount
+    precision_rate = float(positive_precision_amount)/predict_amount
+
     print'----------------------------------------------'
-    print "Accuracy score: %s" % pb_scores
+    print "Precision score: %s" % precision_rate
+    print "Recall score: %s" % recall_rate
+    print "Accuracy score: %s" % accuracy_rate
     print "Area under PR: %s" % metrics.areaUnderPR
     print "Area under ROC: %s" % metrics.areaUnderROC
     print'----------------------------------------------'
@@ -112,7 +171,6 @@ def Predict_test_data(xy_test, datavec_show_list, names_show, clf_model, dir_of_
 
 def Predict_data(X, datavec_show_list, names_show, clf_model, dir_of_outputdata):
     xy_predict = clf_model.transform(X)
-    xy_predict.show(2)
     xy_select = xy_predict.select("probability", "prediction").toPandas()
     #左表可以为空，按照右表连接
     xy_table = pd.merge(pd.DataFrame(datavec_show_list,columns=names_show),

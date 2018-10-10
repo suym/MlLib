@@ -17,14 +17,14 @@ from time import time
 
 from pyspark.sql import SparkSession
 from pyspark.ml.feature import RFormula,VectorAssembler
-from pyspark.ml.classification import LogisticRegressionModel
+from pyspark.ml.classification import GBTClassificationModel
 from pyspark.ml.linalg import Vectors
 from pyspark.sql import Row
 
 def main():
     #静默弃用sklearn警告
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
-    model_name = 'Distr_LogisticRegression'
+    model_name = 'Distr_GBTClassifier'
     dir_of_dict = sys.argv[1]
     bag = too.Read_info(dir_of_dict,'supervision')
     name_dict,options,task_id,job_id,train_result_dir,\
@@ -38,7 +38,7 @@ def main():
     sess = SparkSession\
         .builder\
         .master("local[4]")\
-        .appName("lr_spark")\
+        .appName("GBTClassifier_spark")\
         .config("spark.some.config.option", "some-value")\
         .getOrCreate()
     sc=sess.sparkContext
@@ -94,7 +94,7 @@ def main():
         #拆分训练集和测试集
         xy_train, xy_test = raw_df.randomSplit([train_size, test_size],seed=666)
         #调用模型
-        clf_model = dmp.Distr_LogisticRegression(xy_train,xy_test)
+        clf_model = dmp.Distr_GBTClassifier(xy_train,xy_test)
         #保存模型参数
         clf_model.write().overwrite().save(dir_of_storeModel)
         print'----------------------------------------------'
@@ -127,7 +127,7 @@ def main():
         #创建spark DataFrame
         raw_features = sess.createDataFrame(features)
         raw_x = VectorAssembler(inputCols=raw_features.columns,outputCol='features').transform(raw_features)
-        clf_model = LogisticRegressionModel.load(dir_of_storeModel)
+        clf_model = GBTClassificationModel.load(dir_of_storeModel)
         dmp.Predict_data(raw_x, datavec_show_list, names_show, clf_model, dir_of_outputdata)
         duration = too.Duration(time()-time_start)
         print 'Total run time: %s'%duration

@@ -40,27 +40,8 @@ def main():
         #dataset = dataset[0:1000]
 
         Y_datavec = dataset[Y_names].values
-
-        #分别获得字符字段和数值型字段数据
-        dataset_str = dataset[names_str]
-        dataset_num = dataset[names_num]
-        dataset_show = dataset[names_show]
-        dataset_str_list = dataset_str.values.tolist()
-        datavec_num_list = dataset_num.values.tolist()
-        datavec_show_list = dataset_show.values.tolist()
-
-        vocabset = too.CreateVocabList(dataset_str_list)
-        datavec_str_list = too.BagofWords2Vec(vocabset,dataset_str_list)
-        #vocabset_index = {y:i for i,y in enumerate(vocabset)}
-
-        #将list转化为DataFrame，合并两表
-        datavec_str = pd.DataFrame(datavec_str_list,columns=vocabset)
-        datavec_num = pd.DataFrame(datavec_num_list,columns=names_num)
-        #按照左表连接，右表可以为空
-        data_tem = pd.merge(datavec_num,datavec_str,how="left",right_index=True,left_index=True)
-        X_datavec = data_tem.values
-        X_columns = data_tem.columns
-
+        #分别获得字符字段和数值型字段数据，且合并
+        X_datavec,X_columns,vocabset,datavec_show_list= too.Merge_form(dataset,names_str,names_num,names_show,'vocabset','open')
         #数据归一化
         X_datavec = too.Data_process(X_datavec,normalized_type)
         #处理数据不平衡问题
@@ -101,24 +82,9 @@ def main():
         vocabset = para_dict['vocabset']
         ret_num = para_dict['ret_num']
         #获取数据
-        X_dataset = pd.read_csv(dir_of_inputdata)
-
-        #分别获得字符字段和数值型字段数据
-        dataset_str = X_dataset[names_str]
-        dataset_num = X_dataset[names_num]
-        dataset_show = X_dataset[names_show]
-        dataset_str_list = dataset_str.values.tolist()
-        datavec_num_list = dataset_num.values.tolist()
-        datavec_show_list = dataset_show.values.tolist()
-
-        datavec_str_list = too.BagofWords2Vec(vocabset,dataset_str_list)
-
-        #将list转化为DataFrame，合并两表
-        datavec_str = pd.DataFrame(datavec_str_list,columns=vocabset)
-        datavec_num = pd.DataFrame(datavec_num_list,columns=names_num)
-        data_tem = pd.merge(datavec_num,datavec_str,how="left",right_index=True,left_index=True)
-        X_datavec = data_tem.values
-
+        dataset = pd.read_csv(dir_of_inputdata)
+        #分别获得字符字段和数值型字段数据，且合并
+        X_datavec,datavec_show_list = too.Merge_form(dataset,names_str,names_num,names_show,vocabset,'close')
         #数据归一化
         X = too.Data_process(X_datavec,normalized_type)
         #PCA降维

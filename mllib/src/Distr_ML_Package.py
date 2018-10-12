@@ -10,9 +10,10 @@ __author__ = "Su Yumo <suyumo@buaa.edu.cn>"
 
 import pandas as pd
 from pyspark.ml.tuning import ParamGridBuilder,CrossValidator
-from pyspark.ml.evaluation import BinaryClassificationEvaluator
-from pyspark.mllib.evaluation import BinaryClassificationMetrics
+from pyspark.ml.evaluation import BinaryClassificationEvaluator,RegressionEvaluator
+from pyspark.mllib.evaluation import BinaryClassificationMetrics,RegressionMetrics
 from pyspark.ml.classification import LogisticRegression,RandomForestClassifier,GBTClassifier
+from pyspark.ml.regression import LinearRegression,GBTRegressor,RandomForestRegressor
 
 # ---------------------------------------------
 # 分类算法
@@ -94,6 +95,85 @@ def Distr_RandomForestClassifier(xy_train,xy_test):
     return cvModel.bestModel
 
 # ---------------------------------------------
+# 回归算法
+# ---------------------------------------------
+
+def Distr_LinearRegression(xy_train,xy_test):
+    lr = LinearRegression()
+    evalu = RegressionEvaluator()
+    grid_1 = ParamGridBuilder()\
+            .addGrid(lr.regParam, [1.0])\
+            .addGrid(lr.elasticNetParam, [0.0,0.3,0.5,0.8,1.0])\
+            .build()    
+    cv_1 = CrossValidator(estimator=lr,estimatorParamMaps=grid_1,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel_1=cv_1.fit(xy_train)
+    print "Grid scores: "
+    best_params_1 = Get_best_params(cvModel_1,'reg')['elasticNetParam']
+    grid = ParamGridBuilder()\
+            .addGrid(lr.regParam, [0.001,0.01,0.2,1.0,8.0,50.0])\
+            .addGrid(lr.elasticNetParam, [best_params_1,])\
+            .build() 
+    cv = CrossValidator(estimator=lr,estimatorParamMaps=grid,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel=cv.fit(xy_train)
+    best_params = Get_best_params(cvModel,'reg')
+
+    print "Best parameters set found: %s" % best_params
+    
+    return cvModel.bestModel
+
+def Distr_GBTRegressor(xy_train,xy_test):
+    gr = GBTRegressor(minInstancesPerNode=20,maxDepth=25)
+    evalu = RegressionEvaluator()
+    grid_1 = ParamGridBuilder()\
+            .addGrid(gr.maxIter, [100])\
+            .addGrid(gr.subsamplingRate, [0.5,0.8,1.0])\
+            .build()    
+    cv_1 = CrossValidator(estimator=gr,estimatorParamMaps=grid_1,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel_1=cv_1.fit(xy_train)
+    print "Grid scores: "
+    best_params_1 = Get_best_params(cvModel_1,'reg')['subsamplingRate']
+    grid = ParamGridBuilder()\
+            .addGrid(gr.maxIter, [110,120])\
+            .addGrid(gr.subsamplingRate, [best_params_1,])\
+            .build() 
+    cv = CrossValidator(estimator=gr,estimatorParamMaps=grid,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel=cv.fit(xy_train)
+    best_params = Get_best_params(cvModel,'reg')
+
+    print "Best parameters set found: %s" % best_params
+    
+    return cvModel.bestModel
+
+def Distr_RandomForestRegressor(xy_train,xy_test):
+    rf = RandomForestRegressor(minInstancesPerNode=20,maxDepth=25)
+    evalu = RegressionEvaluator()
+    grid_1 = ParamGridBuilder()\
+            .addGrid(rf.numTrees, [100])\
+            .addGrid(rf.featureSubsetStrategy, ['0.5','0.8','1.0'])\
+            .build()    
+    cv_1 = CrossValidator(estimator=rf,estimatorParamMaps=grid_1,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel_1=cv_1.fit(xy_train)
+    print "Grid scores: "
+    best_params_1 = Get_best_params(cvModel_1,'reg')['featureSubsetStrategy']
+    grid = ParamGridBuilder()\
+            .addGrid(rf.numTrees, [300,500])\
+            .addGrid(rf.featureSubsetStrategy, [best_params_1,])\
+            .build() 
+    cv = CrossValidator(estimator=rf,estimatorParamMaps=grid,evaluator=evalu,numFolds=5)
+    #寻找模型的最佳组合参数,cvModel将返回估计的最佳模型
+    cvModel=cv.fit(xy_train)
+    best_params = Get_best_params(cvModel,'reg')
+
+    print "Best parameters set found: %s" % best_params
+    
+    return cvModel.bestModel
+
+# ---------------------------------------------
 # 函数
 # ---------------------------------------------
 
@@ -102,9 +182,7 @@ def Print_class_info(xy_predict):
     打印和分类效果有关的信息
     xy_predict:模型预测的数据集
     '''
-    def build_predict_target(row):
-        return (float(row.prediction), float(row.label))
-    predict_and_target_rdd = xy_predict.rdd.map(build_predict_target)
+    predict_and_target_rdd = xy_predict.rdd.map(lambda row: (float(row.prediction), float(row.label)))
     metrics = BinaryClassificationMetrics(predict_and_target_rdd)
 
     correct_amount = xy_predict.filter(xy_predict['label'] == xy_predict['prediction']).count() 
@@ -125,7 +203,22 @@ def Print_class_info(xy_predict):
     print "Area under ROC: %s" % metrics.areaUnderROC
     print'----------------------------------------------'
 
-def Get_best_params(cvModel):
+def Print_regression_info(xy_predict):
+    '''
+    打印和回归有关的信息
+    xy_predict:模型预测的数据集
+    '''
+    predict_and_target_rdd = xy_predict.rdd.map(lambda row: (float(row.prediction), float(row.label)))
+    metrics = RegressionMetrics(predict_and_target_rdd)
+
+    print'----------------------------------------------'
+    print"MSE: %s" % metrics.meanSquaredError
+    print"RMSE: %s" % metrics.rootMeanSquaredError
+    print"R-squared: %s" % metrics.r2
+    print"MAE: %s" % metrics.meanAbsoluteError
+    print'----------------------------------------------'
+
+def Get_best_params(cvModel,mtype='class'):
     '''
     获得交叉验证最优的参数
     cvModel:交叉验证类对象
@@ -146,9 +239,16 @@ def Get_best_params(cvModel):
             cvModel.avgMetrics
         )
              ]
-    best_params_tem = sorted(results, 
-                   key=lambda el: el[1], 
-                   reverse=True)[0][0]
+    if mtype == 'class':
+        #降序
+        best_params_tem = sorted(results, 
+                       key=lambda el: el[1], 
+                       reverse=True)[0][0]
+    if mtype == 'reg':
+        #升序
+        best_params_tem = sorted(results, 
+                       key=lambda el: el[1], 
+                       reverse=False)[0][0]
     best_params = []
     for k in best_params_tem:
         best_params.extend(k.items())
@@ -159,19 +259,26 @@ def Get_best_params(cvModel):
 
     return dict(best_params)
 
-def Predict_test_data(xy_test, datavec_show_list, names_show, clf_model, dir_of_outputdata):
+def Predict_test_data(xy_test, datavec_show_list, names_show, clf_model, dir_of_outputdata,mtype='class'):
     xy_predict = clf_model.transform(xy_test)
-    Print_class_info(xy_predict)
-    xy_select = xy_predict.select("label","probability", "prediction").toPandas()
+    if mtype == 'class':
+        Print_class_info(xy_predict)
+        xy_select = xy_predict.select("label","probability","prediction").toPandas()
+    if mtype == 'reg':
+        Print_regression_info(xy_predict)
+        xy_select = xy_predict.select("label","prediction").toPandas()
     #左表可以为空，按照右表连接
     xy_table = pd.merge(pd.DataFrame(datavec_show_list,columns=names_show),
                           xy_select,
                           how="right",right_index=True,left_index=True)
     xy_table.to_csv(dir_of_outputdata,index=False)
 
-def Predict_data(X, datavec_show_list, names_show, clf_model, dir_of_outputdata):
+def Predict_data(X, datavec_show_list, names_show, clf_model, dir_of_outputdata,mtype='class'):
     xy_predict = clf_model.transform(X)
-    xy_select = xy_predict.select("probability", "prediction").toPandas()
+    if mtype == 'class':
+        xy_select = xy_predict.select("probability","prediction").toPandas()
+    if mtype == 'reg':
+        xy_select = xy_predict.select("prediction").toPandas()
     #左表可以为空，按照右表连接
     xy_table = pd.merge(pd.DataFrame(datavec_show_list,columns=names_show),
                           xy_select,

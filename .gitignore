@@ -15,5 +15,4 @@ mllib/cla_parameter/
 mllib/reg_parameter/
 mllib/cluster_parameter/
 mllib/classModel/spark-warehouse/
-
-
+mllib/regressionModel/spark-warehouse/

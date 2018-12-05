@@ -29,9 +29,8 @@ def main():
 
     dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
     dir_of_storeModel = train_result_dir + '/%s_model.m'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
-    RE_LogisticReg = name_dict['RE_LogisticReg']
-    penalty = RE_LogisticReg['penalty']
-    C_num = RE_LogisticReg['C']
+    penalty = name_dict['penalty']
+    C_num = name_dict['C']
     
 
     if options == 'train':

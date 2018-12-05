@@ -1,0 +1,9 @@
+{
+  "options": "A_log",
+  "task_id": 111,
+  "job_id": 21,
+  "dir_of_inputdata": "../../run/data/tt",
+  "dir_of_outputdata": "../../run/result/A_log.csv",
+  "A_col": "amount_d",
+  "new_col": "new"
+}

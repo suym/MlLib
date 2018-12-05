@@ -1,0 +1,8 @@
+{
+  "options": "Cal_corr",
+  "task_id": 111,
+  "job_id": 21,
+  "dir_of_inputdata": "../../run/data/tt",
+  "dir_of_outputdata": "../../run/result/Cal_corr.csv",
+  "corr_col": ["amount_d","amount_h","urlType_d"]
+}

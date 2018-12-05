@@ -29,9 +29,8 @@ def main():
 
     dir_of_storePara = train_result_dir + '/%s_Parameters.json'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
     dir_of_storeModel = train_result_dir + '/%s_model.m'%(str(task_id)+'_'+str(job_id)+'_'+model_name)
-    RE_GradientBoostingCla = name_dict['RE_GradientBoostingCla']
-    n_estimators = RE_GradientBoostingCla['n_estimators']
-    max_features = RE_GradientBoostingCla['max_features']
+    n_estimators = name_dict['n_estimators']
+    max_features = name_dict['max_features']
 
     if options == 'train':
         time_start = time()

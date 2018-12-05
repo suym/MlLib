@@ -1,0 +1,10 @@
+{
+  "options": "A_add_B",
+  "task_id": 111,
+  "job_id": 21,
+  "dir_of_inputdata": "../../run/data/tt",
+  "dir_of_outputdata": "../../run/result/A_add_B.csv",
+  "A_col": "amount_d",
+  "B_col": "amount_h",
+  "new_col": "new"
+}

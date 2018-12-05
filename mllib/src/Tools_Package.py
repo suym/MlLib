@@ -181,11 +181,15 @@ def Predict_test_data(X_ori, Y, datavec_show_list, names_show,clf_model, dir_of_
     if options=='MFNN':
         y_pred = clf_model.predict(X_ori,batch_size=128)
     if mtype=='class':
-        #y_pred[y_pred>90]=0
         print'----------------------------------------------'
-        print "Accuracy score: ",accuracy_score(Y,y_pred,normalize=True)
-        print "Precision score: ",precision_score(Y,y_pred)
-        print "Recall score: ",recall_score(Y,y_pred)
+        if len(set(Y)) == 2:
+            print "Accuracy score: ",accuracy_score(Y,y_pred,normalize=True)
+            print "Precision score: ",precision_score(Y,y_pred)
+            print "Recall score: ",recall_score(Y,y_pred)
+        else:
+            print "Accuracy score: ",accuracy_score(Y,y_pred,normalize=True)
+            print "Precision score: ",precision_score(Y,y_pred,average='macro')
+            print "Recall score: ",recall_score(Y,y_pred,average='macro')
         print'----------------------------------------------'
         y_com = [y_pred[i]==Y[i] for i in range(len(Y))]
         #左表可以为空，按照右表连接

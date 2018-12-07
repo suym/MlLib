@@ -1,0 +1,9 @@
+{
+  "options": "A_pie",
+  "task_id": 111,
+  "job_id": 21,
+  "dir_of_inputdata": "../../run/data/tt",
+  "dir_of_outputdata": "../../run/result/A_pie.svg",
+  "data_size":30000,
+  "A_col": "Acct_Number"
+}

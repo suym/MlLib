@@ -1,0 +1,10 @@
+{
+  "options": "AB_scatter",
+  "task_id": 111,
+  "job_id": 21,
+  "dir_of_inputdata": "../../run/data/tt",
+  "dir_of_outputdata": "../../run/result/AB_scatter.svg",
+  "data_size":30000,
+  "A_col": "amount_d",
+  "B_col": "amount_h"
+}

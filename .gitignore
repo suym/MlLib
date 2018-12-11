@@ -4,13 +4,13 @@
 # no pyc files
 *.pyc
 # no data files
-*.csv
+#*.csv
 *.dat
 *.pkl
 # no log files
 *.log
 *.err
-run/
+run/result/
 mllib/cla_parameter/
 mllib/reg_parameter/
 mllib/cluster_parameter/

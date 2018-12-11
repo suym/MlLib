@@ -14,7 +14,7 @@ def Read_info(dir_of_dict):
         name_dict = eval(column_lines)
     A_func_B = ['A_add_B','A_minus_B','A_times_B','A_divides_B']
     A_func = ['A_log','A_squared']
-    Cal_corr = 'A_corr_B'
+    Muti_col = ['Cal_corr','Select_col']
 
     options = name_dict['options']
     task_id = name_dict['task_id']
@@ -33,7 +33,7 @@ def Read_info(dir_of_dict):
         new_col = name_dict['new_col']
         bag = options,task_id,job_id,dir_of_inputdata,dir_of_outputdata,A_col,new_col
 
-    if options == 'Cal_corr':
+    if options in Muti_col:
         corr_col = name_dict['corr_col']
         bag = options,task_id,job_id,dir_of_inputdata,dir_of_outputdata,corr_col
 
@@ -67,4 +67,9 @@ def A_corr_B(data,corr_col):
     data = data[corr_col]
     
     return data.corr()
+
+def Select_col(data,corr_col):
+    data = data[corr_col]
+
+    return data
 

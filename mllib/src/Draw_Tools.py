@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 __author__ = "Su Yumo <suyumo@buaa.edu.cn>"
 
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 import pygal              
 from collections import Counter
 
@@ -10,7 +13,7 @@ def Read_info(dir_of_dict):
     读取配置文件
     '''
     with open(dir_of_dict,'r') as f:
-        column_lines = f.read()
+        column_lines = f.read().encode('utf-8')
         name_dict = eval(column_lines)
     A_func_B = ['AB_scatter',]
     A_func = ['A_pie',]
@@ -23,12 +26,12 @@ def Read_info(dir_of_dict):
     data_size = name_dict['data_size']
 
     if options in A_func_B:
-        A_col = name_dict['A_col']
-        B_col = name_dict['B_col']
+        A_col = name_dict['A_col'].decode('utf-8')
+        B_col = name_dict['B_col'].decode('utf-8')
         bag = options,task_id,job_id,dir_of_inputdata,dir_of_outputdata,data_size,A_col,B_col
         
     if options in A_func:
-        A_col = name_dict['A_col']
+        A_col = name_dict['A_col'].decode('utf-8')
         bag = options,task_id,job_id,dir_of_inputdata,dir_of_outputdata,data_size,A_col
 
     return bag

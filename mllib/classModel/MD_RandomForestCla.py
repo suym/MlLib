@@ -17,11 +17,11 @@ from collections import Counter
 from time import time
 
 
-def main():
+def main_model(dir_of_dict):
     #静默弃用sklearn警告
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
-    model_name = 'RandomForestCla'
-    dir_of_dict = sys.argv[1]
+    model_name = 'MD_RandomForestCla'
+    #dir_of_dict = sys.argv[1]
     bag = too.Read_info(dir_of_dict,'supervision')
     name_dict,options,task_id,job_id,train_result_dir,\
     names_str,names_num,names_show,Y_names,dir_of_inputdata,\
@@ -105,6 +105,6 @@ def main():
         print 'Total run time: %s'%duration
 
 if __name__ == "__main__":
-    main()
+    main_model(dir_of_dict)
 
 

@@ -7,8 +7,8 @@ sys.path.append("..")
 import pandas as pd
 from src import Feature_Tools as ft
 
-def main():
-    dir_of_dict = sys.argv[1]
+def main_model(dir_of_dict):
+    #dir_of_dict = sys.argv[1]
     bag = ft.Read_info(dir_of_dict)
     options,task_id,job_id,dir_of_inputdata,\
     dir_of_outputdata,A_col,B_col,new_col = bag
@@ -29,4 +29,4 @@ def main():
         dataset.to_csv(dir_of_outputdata,index=False)
 
 if __name__ == '__main__':
-    main()
+    main_model(dir_of_dict)

@@ -15,3 +15,9 @@
 > ./mllib/visualData目录存放数据可视化程序
 
 > ./mllib/src目录存放公共的代码库
+
+> ./share/logPattern目录存放日志处理程序
+
+## 注意
+
+> 由于mllib打包版本的接口设计和master分支不同，因此被存放在dev分支中

@@ -10,13 +10,18 @@ __author__ = "Su Yumo <suyumo@buaa.edu.cn>"
 import re
 import os
 import operator
+import warnings
 import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 import json
 import numpy as np
+from time import time
 from collections import Counter
 from sklearn.model_selection import train_test_split
 
 from keras.models import Model
+from keras.models import load_model
 from keras.layers import Input, LSTM, Dense, Embedding
 from keras.preprocessing.sequence import pad_sequences
 
@@ -28,7 +33,9 @@ def parse_train_data(dir_of_inputdata):
     Y_tem = []
     max_encoder_seq_length = 0
     max_decoder_seq_length = 0
-    regEx = re.compile('\\W*')
+    #()括号可以保留分隔符
+    regEx_x = re.compile('(\\W*)')
+    regEx_y = re.compile(' ')
     with open(dir_of_inputdata) as f:
         for line in f.readlines():
             data = json.loads(line)
@@ -39,7 +46,7 @@ def parse_train_data(dir_of_inputdata):
 
     for line in X_tem:
         #将句子分词
-        listoftoken = regEx.split(line)
+        listoftoken = regEx_x.split(line)
         #去掉空格并将字符转为小写
         tem = [tok.lower() for tok in listoftoken if len(tok)>0]
         #将句子中的数字转化为特定的字符isdigit
@@ -53,7 +60,7 @@ def parse_train_data(dir_of_inputdata):
 
     for line in Y_tem:
         #将句子分词
-        listoftoken = regEx.split(line)
+        listoftoken = regEx_y.split(line)
         #去掉空格并将字符转为小写
         tem = [tok.lower() for tok in listoftoken if len(tok)>0]
         #将句子中的数字转化为特定的字符isdigit
@@ -73,7 +80,39 @@ def parse_train_data(dir_of_inputdata):
 
     Max_Sequences_Length = max(max_encoder_seq_length,max_decoder_seq_length+2)
 
-    return X_dataset, Y_dataset, Max_Sequences_Length
+    return X_dataset, Y_dataset, Max_Sequences_Length, X_tem
+
+def parse_test_data(dir_of_inputdata):
+    X_dataset = []
+    X_tem = []
+    max_encoder_seq_length = 0
+    #()括号可以保留分隔符
+    regEx_x = re.compile('(\\W*)')
+    with open(dir_of_inputdata) as f:
+        for line in f.readlines():
+            data = json.loads(line)
+            for data_str in data:
+                #获得raw_event
+                X_tem.append(data_str['key'])
+
+    for line in X_tem:
+        #将句子分词
+        listoftoken = regEx_x.split(line)
+        #去掉空格并将字符转为小写
+        tem = [tok.lower() for tok in listoftoken if len(tok)>0]
+        #将句子中的数字转化为特定的字符isdigit
+        tem_digit = ['isdigit' if x.isdigit() else str(x) for x in tem]
+        #获得最长句子的单词数
+        if len(tem_digit)>max_encoder_seq_length:
+            max_encoder_seq_length = len(tem_digit)
+        #将一个list中的字符拼接成字符串，不再是list
+        tem_isdigit = ' '.join(tem_digit)
+        X_dataset.append(tem_isdigit)
+
+    print "Max sequence length for inputs: %s"%max_encoder_seq_length
+    print'----------------------------------------------'
+
+    return X_dataset, X_tem
 
 def _to_word_index(X_dataset,word_index,Max_Sequences_Length):
     #将所有的词编码为数字
@@ -107,15 +146,20 @@ def to_word_index(X_dataset,Y_dataset,Max_Sequences_Length):
     word_index["UNK"] = 1
 
     x_data = _to_word_index(X_dataset,word_index,Max_Sequences_Length)
-    y_input_data = _to_word_index(Y_dataset,word_index,Max_Sequences_Length)
+    y_data = _to_word_index(Y_dataset,word_index,Max_Sequences_Length)
     vocab_size = len(word_index)
     #`y_input_data`慢`y_target_data`一个时间步
-    y_target_data = to_one_hot(y_input_data,Max_Sequences_Length,vocab_size)
+    y_input_data = y_data[:,:-1]
+    y_target_data = y_data[:,1:]
+    v_a,v_b = y_target_data.shape
+    #sparse_categorical_crossentropy需要标签为3个维度
+    y_target_data = y_target_data.reshape(v_a,v_b,1)
+
     print 'size of word_index: %s'%vocab_size
     print'----------------------------------------------'
-    print 'word to index:'
-    print sorted(word_index.items(),key = lambda x:x[1],reverse = False)
-    print'----------------------------------------------'
+    #print 'word to index:'
+    #print sorted(word_index.items(),key = lambda x:x[1],reverse = False)
+    #print'----------------------------------------------'
 
     return x_data, y_input_data, y_target_data, word_index, vocab_size
 
@@ -154,7 +198,7 @@ def build_basic_model(latent_dim,vocab_size):
     #定义一个训练模型，输入`encoder_input_data`和`decoder_input_data`，输出为`decoder_target_data`
     basic_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
     #当预测目标是整形数字的时候可以用sparse_categorical_crossentropy
-    basic_model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+    basic_model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy', metrics = ['accuracy'])
     basic_model.summary()
 
     return basic_model
@@ -166,7 +210,7 @@ def trian_model(*data):
     basic_model.fit([x_data,y_input_data], y_target_data,
           batch_size=batch_size,
           epochs=epochs,
-          validation_split=0.2)
+          validation_split=0.15)
 
     return basic_model 
 
@@ -205,7 +249,7 @@ def decode_sequence(input_seq, word_index, Max_Sequences_Length, encoder_model, 
 
     #创造一个空的目标序列
     target_seq = np.zeros((1, 1))
-    target_seq[0, 0] = target_token_index['<-^-start-^->']
+    target_seq[0, 0] = word_index['<-^-start-^->']
     
     #进行句子的恢复
     stop_condition = False
@@ -214,12 +258,15 @@ def decode_sequence(input_seq, word_index, Max_Sequences_Length, encoder_model, 
     while not stop_condition:
         output, de_state_h, de_state_c = decoder_model.predict([target_seq] + states_value)
         decoder_states = [de_state_h, de_state_c]
-
-        sampled_token_index = np.argmax(output[0, -1, :])
+        #output[0, -1, 1:]中1:是为了去掉空值下标
+        sampled_token_index = np.argmax(output[0, -1, 1:])
+        sampled_token_index = sampled_token_index + 1
         sampled_word = reverse_word_index[sampled_token_index]
         decoded_sentence =  decoded_sentence + sampled_word + ' '
         
         if sampled_word == '<-^-end-^->' or len(decoded_sentence) > Max_Sequences_Length:
+            #去掉最后的无用预测值'<-^-end-^->'
+            decoded_sentence = decoded_sentence[:-12]
             stop_condition = True
             
         #更新target_seq
@@ -231,12 +278,19 @@ def decode_sequence(input_seq, word_index, Max_Sequences_Length, encoder_model, 
         
     return decoded_sentence
 
-def predict_data(x_data, word_index, Max_Sequences_Length, encoder_model, decoder_model):
+def id2str(ids,word_index):
+    #下标对文本的索引表
+    reverse_word_index = {v:k for k, v in word_index.items()}
+    # id转文字，找不到的用空字符代替
+    return ' '.join([reverse_word_index.get(i, '') for i in ids])
+
+def predict_data(x_data, x_raw_test, word_index, Max_Sequences_Length, encoder_model, decoder_model):
     for seq_index in range(len(x_data)):
         input_seq = x_data[seq_index: seq_index + 1]
         decoded_sentence = decode_sequence(input_seq, word_index, Max_Sequences_Length, encoder_model, decoder_model)
+        #input_sentence = id2str(x_data[seq_index],word_index)
         print 'Input sentence:'
-        print x_data[seq_index]
+        print  x_raw_test[seq_index]
         print 'Decoded sentence:' 
         print decoded_sentence
         print '----------------------------------------------'
@@ -283,17 +337,17 @@ def Duration(seconds):
 def main():
     #静默弃用sklearn警告
     warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
-    options = 'train'
-    dir_of_inputdata = './data/final_data'
-    dir_of_outputdata = './data/outdata'
+    options = 'trian'
+    dir_of_inputdata = './final_data_all'
+    dir_of_outputdata = './outdata'
     batch_size =256
-    epochs = 10
+    epochs = 4
     latent_dim = 128
 
     if options == 'train':
         time_start = time()
-        dir_of_storePara = './data/Parameters.json'
-        X_dataset, Y_dataset, Max_Sequences_Length = parse_train_data(dir_of_inputdata)
+        dir_of_storePara = './Parameters.json'
+        X_dataset, Y_dataset, Max_Sequences_Length, x_raw_data = parse_train_data(dir_of_inputdata)
         x_data, y_input_data, y_target_data, word_index, vocab_size = to_word_index(X_dataset,Y_dataset,Max_Sequences_Length)
         print'--------------Train data shape----------------'
         print 'x_data.shape:',x_data.shape
@@ -302,16 +356,34 @@ def main():
         print'----------------------------------------------'
         print 'y_target_data.shape:',y_target_data.shape
         print'----------------------------------------------'
-        x_train,x_test,y_input_train,y_input_test,y_target_train,y_target_test = train_test_split(x_data,y_input_data,y_target_data,
-                                                        train_size=None, test_size=20, random_state=0)
+        x_train,x_test,y_input_train,y_input_test,\
+        y_target_train,y_target_test,x_raw_train,x_raw_test = train_test_split(x_data,y_input_data,y_target_data,x_raw_data,
+            train_size=None, test_size=100, random_state=0)
         basic_model = trian_model(x_train,y_input_train,y_target_train,batch_size,epochs,latent_dim,vocab_size)
         save_model(basic_model)
         encoder_model, decoder_model = build_inference_model(basic_model,latent_dim)
-        predict_data(x_test, word_index, Max_Sequences_Length, encoder_model, decoder_model)
+        predict_data(x_test, x_raw_test, word_index, Max_Sequences_Length, encoder_model, decoder_model)
         storePara(dir_of_storePara, word_index, Max_Sequences_Length)
         duration = Duration(time()-time_start)
         print 'Total run time: %s'%duration
 
+    if options == 'predict':
+        time_start = time()
+        dir_of_storePara = './Parameters.json'
+        with open(dir_of_storePara,'r') as f:
+            para_dict = json.load(f)
+        word_index = para_dict['word_index']
+        Max_Sequences_Length = para_dict['Max_Sequences_Length']
+        X_dataset, x_raw_data = parse_test_data(dir_of_inputdata)
+        x_data = _to_word_index(X_dataset,word_index,Max_Sequences_Length)
+        print'--------------Train data shape----------------'
+        print 'x_data.shape:',x_data.shape
+        print'----------------------------------------------'
+        basic_model = loadModel()
+        encoder_model, decoder_model = build_inference_model(basic_model,latent_dim)
+        predict_data(x_data, x_raw_data, word_index, Max_Sequences_Length, encoder_model, decoder_model)
+        duration = Duration(time()-time_start)
+        print 'Total run time: %s'%duration
 
 if __name__ == '__main__':
     main()

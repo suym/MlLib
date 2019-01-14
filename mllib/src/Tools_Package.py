@@ -117,6 +117,26 @@ def BagofWords2Vec(vocablist,inputset):
 
     return datavec
 
+def PolyofWords2Vec(vocablist,inputset):
+    '''
+    利用词汇库，将文本数据样本，转化为对应的词条向量
+    vocablist：词汇表
+    inputset：文本数据集
+    '''
+    datavec = []
+    for document in inputset:
+        tem = [0]*len(document)
+        for word in document:
+            if str(word) in vocablist:
+                tem[document.index(str(word))]=vocablist.index(str(word))
+            else:
+                print "the word : %s is not in my vocabulary!" % word
+                #pass
+        if sum(tem) > 0:
+            datavec.append(tem)
+
+    return datavec
+
 def CalcMostLabel(xytable,Y_names,low_value = 0,hight_value = 30000):
     #按照类别的数量，从多到少排序
     Y_tem = sorted(Counter(xytable[Y_names]).items(),key=operator.itemgetter(1), reverse=True) 
